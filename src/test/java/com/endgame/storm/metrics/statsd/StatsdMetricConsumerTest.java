@@ -69,6 +69,14 @@ public class StatsdMetricConsumerTest extends TestCase {
 		conf.put(StatsdMetricConsumer.STATSD_PORT, "4444");
 		undertest.parseConfig(conf);
 		assertEquals(4444, undertest.statsdPort);
+
+		conf.put(StatsdMetricConsumer.STATSD_HOST, null);
+		conf.put(StatsdMetricConsumer.STATSD_PREFIX, null);
+		conf.put(StatsdMetricConsumer.STATSD_PORT, null);
+		undertest.parseConfig(conf);
+		assertEquals(4444, undertest.statsdPort);
+		assertEquals("localhost", undertest.statsdHost);
+		assertEquals("my.statsd.prefix.", undertest.statsdPrefix);
 	}
 
 	public void testCleanString() {

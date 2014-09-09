@@ -68,23 +68,23 @@ public class StatsdMetricConsumer implements IMetricsConsumer {
     }
 
     void parseConfig(@SuppressWarnings("rawtypes") Map conf) {
-        if (conf.containsKey(Config.TOPOLOGY_NAME)) {
+        if (conf.get(Config.TOPOLOGY_NAME) != null) {
             topologyName = (String) conf.get(Config.TOPOLOGY_NAME);
         }
 
-        if (conf.containsKey(STATSD_HOST)) {
+        if (conf.get(STATSD_HOST) != null) {
             statsdHost = (String) conf.get(STATSD_HOST);
         }
 
-        if (conf.containsKey(STATSD_PORT)) {
+        if (conf.get(STATSD_PORT) != null) {
             if (conf.get(STATSD_PORT) instanceof String) {
                 statsdPort = Integer.parseInt((String) conf.get(STATSD_PORT));
-            } else {
+            } else if (conf.get(STATSD_PORT) != null) {
                 statsdPort = ((Number) conf.get(STATSD_PORT)).intValue();
             }
         }
 
-        if (conf.containsKey(STATSD_PREFIX)) {
+        if (conf.get(STATSD_PREFIX) != null) {
             statsdPrefix = (String) conf.get(STATSD_PREFIX);
             if (!statsdPrefix.endsWith(".")) {
                 statsdPrefix += ".";
@@ -137,10 +137,10 @@ public class StatsdMetricConsumer implements IMetricsConsumer {
         public StatsDType getTypeFromName(String name) {
             // making sure they're the last characters
             // elapsed is always a timer
-            if (name.lastIndexOf(".elapsed") == (name.length() - 8)) {
+            if (name.endsWith(".elapsed")) {
                 return StatsDType.TIMER;
             }
-            if (name.lastIndexOf(".gauge") == (name.length() - 6)) {
+            if (name.endsWith(".gauge")) {
                 return StatsDType.GAUGE;
             }
             return StatsDType.COUNTER;
