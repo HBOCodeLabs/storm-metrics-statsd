@@ -166,14 +166,13 @@ public class StatsdMetricConsumer implements IMetricsConsumer {
         // setup the header for the metrics pertained to this machine
         StringBuilder localMetric = new StringBuilder()
                 .append(clean(taskInfo.srcWorkerHost)).append(".")
-                .append(taskInfo.srcWorkerPort).append(".")
-                .append(clean(taskInfo.srcComponentId)).append(".");
+                .append(taskInfo.srcWorkerPort).append(".");
 
-        StringBuilder globalMetric = new StringBuilder()
-                .append(clean(taskInfo.srcComponentId)).append(".");
+        int globalMetricHdrLength = localMetric.length();
+
+        localMetric.append(clean(taskInfo.srcComponentId)).append(".");
 
         int hdrLength = localMetric.length();
-        int globalMetricHdrLength = globalMetric.length();
 
         for (DataPoint p : dataPoints) {
 
@@ -186,15 +185,11 @@ public class StatsdMetricConsumer implements IMetricsConsumer {
             localMetric.delete(hdrLength, localMetric.length());
             localMetric.append(name);
 
-            globalMetric.delete(globalMetricHdrLength, globalMetric.length());
-            globalMetric.append(name);
-
             if (p.value instanceof Number) {
-                res.add(new Metric(globalMetric.toString(), ((Number) p.value).longValue()));
+            	res.add(new Metric(localMetric.substring(globalMetricHdrLength), ((Number) p.value).longValue()));
                 res.add(new Metric(localMetric.toString(), ((Number) p.value).longValue()));
             } else if (p.value instanceof Map) {
                 int hdrAndNameLength = localMetric.length();
-                int globalNameLength = globalMetric.length();
                 @SuppressWarnings("rawtypes")
                 Map map = (Map) p.value;
                 for (Object subName : map.keySet()) {
@@ -208,10 +203,7 @@ public class StatsdMetricConsumer implements IMetricsConsumer {
                         localMetric.delete(hdrAndNameLength, localMetric.length());
                         localMetric.append(".").append(subNameStr);
 
-                        globalMetric.delete(globalNameLength, globalMetric.length());
-                        globalMetric.append(".").append(subNameStr);
-
-                        res.add(new Metric(globalMetric.toString(), ((Number) subValue).longValue()));
+                        res.add(new Metric(localMetric.substring(globalMetricHdrLength), ((Number) subValue).longValue()));
                         res.add(new Metric(localMetric.toString(), ((Number) subValue).longValue()));
                     }
                 }
