@@ -48,7 +48,7 @@ public class StatsdMetricConsumer implements IMetricsConsumer {
     public static final String STATSD_PREFIX = "metrics.statsd.prefix";
 
     String topologyName;
-    String statsdHost;
+    String statsdHost = "localhost";
     int statsdPort = 8125;
     String statsdPrefix = "storm.metrics.";
 
