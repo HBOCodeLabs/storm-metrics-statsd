@@ -70,7 +70,6 @@ public class StatsdMetricConsumerTest extends TestCase {
 	public void testCleanString() {
 		assertEquals("test", undertest.clean("test"));
 		assertEquals("test_name", undertest.clean("test/name"));
-		assertEquals("test_name", undertest.clean("test.name"));
 	}
 
 	public void testPrepare() {
@@ -109,8 +108,11 @@ public class StatsdMetricConsumerTest extends TestCase {
 		dataPoints.add(new DataPoint("my_double", 56.0d));
 		dataPoints.add(new DataPoint("ignored", "not a num"));
 		dataPoints.add(new DataPoint("points", ImmutableMap
-				.<String, Object> of("count", 123, "time", 2342234, "ignored",
-						"not a num")));
+				.<String, Object> of("elapsed", 3321,
+					"gauge", 1234,
+					"count", 123,
+					"time", 2342234,
+					"ignored", "not a num")));
 
 		undertest.topologyName = "testTop";
 		undertest.statsdPrefix = "testPrefix";
@@ -120,12 +122,22 @@ public class StatsdMetricConsumerTest extends TestCase {
 		// they should not show up here
 
 		List<Metric> expected = ImmutableList.<Metric> of(new Metric(
-				"host1.6701.myBolt7.my_int", 57), new Metric(
-				"host1.6701.myBolt7.my_long", 57), new Metric(
-				"host1.6701.myBolt7.my_float", 222), new Metric(
-				"host1.6701.myBolt7.my_double", 56), new Metric(
-				"host1.6701.myBolt7.points.count", 123), new Metric(
-				"host1.6701.myBolt7.points.time", 2342234));
+				"mybolt7.my.int", 57), new Metric(
+				"host1.6701.mybolt7.my.int", 57), new Metric(
+				"mybolt7.my.long", 57), new Metric(
+				"host1.6701.mybolt7.my.long", 57), new Metric(
+				"mybolt7.my_float", 222), new Metric(
+				"host1.6701.mybolt7.my_float", 222), new Metric(
+				"mybolt7.my_double", 56), new Metric(
+				"host1.6701.mybolt7.my_double", 56), new Metric(
+				"mybolt7.points.elapsed", 3321), new Metric(
+				"host1.6701.mybolt7.points.elapsed", 3321), new Metric(
+				"mybolt7.points.gauge", 1234), new Metric(
+				"host1.6701.mybolt7.points.gauge", 1234), new Metric(
+				"mybolt7.points.count", 123), new Metric(
+				"host1.6701.mybolt7.points.count", 123), new Metric(
+				"mybolt7.points.time", 2342234), new Metric(
+				"host1.6701.mybolt7.points.time", 2342234));
 
 		assertEquals(expected,
 				undertest.dataPointsToMetrics(taskInfo, dataPoints));

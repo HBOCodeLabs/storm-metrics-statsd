@@ -89,25 +89,43 @@ public class StatsdMetricConsumer implements IMetricsConsumer {
 	}
 
 	String clean(String s) {
-		return s.replace('.', '_').replace('/', '_');
+		return s.replace('/', '_').toLowerCase();
 	}
 
 	@Override
 	public void handleDataPoints(TaskInfo taskInfo,
 			Collection<DataPoint> dataPoints) {
 		for (Metric metric : dataPointsToMetrics(taskInfo, dataPoints)) {
-			report(metric.name, metric.value);
+			report(metric);
 		}
 	}
 
 	public static class Metric {
-		String name;
-		int value;
+		public enum StatsDType {
+            TIMER, COUNTER, GAUGE
+        }
 
-		public Metric(String name, int value) {
+		String name;
+		Number value;
+        StatsDType type;
+
+		public Metric(String name, Number value) {
 			this.name = name;
 			this.value = value;
-		}
+			this.type = getTypeFromName(name);
+        }
+
+        // Storm doesn't provide any way to convert their Metrics to StatsD's equivalent.  So we have to base on the name of the metric
+        public StatsDType getTypeFromName(String name) {
+            // elapsed is always a timer
+            if (name.indexOf(".elapsed") > -1) {
+                return StatsDType.TIMER;
+            }
+            if (name.indexOf(".gauge") > -1) {
+                return StatsDType.GAUGE;
+            }
+            return StatsDType.COUNTER;
+        }
 
 		@Override
 		public boolean equals(Object obj) {
@@ -123,8 +141,10 @@ public class StatsdMetricConsumer implements IMetricsConsumer {
 					return false;
 			} else if (!name.equals(other.name))
 				return false;
-			if (value != other.value)
+			if (value.equals(other.value))
 				return false;
+			if (type != other.type)
+                return false;
 			return true;
 		}
 
@@ -135,45 +155,99 @@ public class StatsdMetricConsumer implements IMetricsConsumer {
 	}
 
 	List<Metric> dataPointsToMetrics(TaskInfo taskInfo,
-			Collection<DataPoint> dataPoints) {
-		List<Metric> res = new LinkedList<>();
+            Collection<DataPoint> dataPoints) {
+        List<Metric> res = new LinkedList<>();
 
-		StringBuilder sb = new StringBuilder()
-				.append(clean(taskInfo.srcWorkerHost)).append(".")
-				.append(taskInfo.srcWorkerPort).append(".")
-				.append(clean(taskInfo.srcComponentId)).append(".");
+        // we don't want to keep things like "__system"
+        if (rejectMetric(clean(taskInfo.srcComponentId))) {
+            return res;
+        }
 
-		int hdrLength = sb.length();
+        // setup the header for the metrics pertained to this machine
+        StringBuilder localMetric = new StringBuilder()
+                .append(clean(taskInfo.srcWorkerHost)).append(".")
+                .append(taskInfo.srcWorkerPort).append(".")
+                .append(clean(taskInfo.srcComponentId)).append(".");
 
-		for (DataPoint p : dataPoints) {
+        StringBuilder globalMetric = new StringBuilder()
+                .append(clean(taskInfo.srcComponentId)).append(".");
 
-			sb.delete(hdrLength, sb.length());
-			sb.append(clean(p.name));
+        int hdrLength = localMetric.length();
+        int globalMetricHdrLength = globalMetric.length();
 
-			if (p.value instanceof Number) {
-				res.add(new Metric(sb.toString(), ((Number) p.value).intValue()));
-			} else if (p.value instanceof Map) {
-				int hdrAndNameLength = sb.length();
-				@SuppressWarnings("rawtypes")
-				Map map = (Map) p.value;
-				for (Object subName : map.keySet()) {
-					Object subValue = map.get(subName);
-					if (subValue instanceof Number) {
-						sb.delete(hdrAndNameLength, sb.length());
-						sb.append(".").append(clean(subName.toString()));
+        for (DataPoint p : dataPoints) {
 
-						res.add(new Metric(sb.toString(), ((Number) subValue).intValue()));
-					}
-				}
-			}
-		}
-		return res;
-	}
+            String name = clean(p.name);
+            // we don't want to keep things like "__acker"
+            if (rejectMetric(name)) {
+                continue;
+            }
 
-	public void report(String s, int number) {
-		LOG.debug("reporting: {}={}", s, number);
-		statsd.count(s, number);
-	}
+            localMetric.delete(hdrLength, localMetric.length());
+            localMetric.append(name);
+
+            globalMetric.delete(globalMetricHdrLength, globalMetric.length());
+            globalMetric.append(name);
+
+            if (p.value instanceof Number) {
+                res.add(new Metric(globalMetric.toString(), ((Number) p.value).longValue()));
+                res.add(new Metric(localMetric.toString(), ((Number) p.value).longValue()));
+            } else if (p.value instanceof Map) {
+                int hdrAndNameLength = localMetric.length();
+                int globalNameLength = globalMetric.length();
+                @SuppressWarnings("rawtypes")
+                Map map = (Map) p.value;
+                for (Object subName : map.keySet()) {
+                    String subNameStr = clean(subName.toString());
+                    // we don't want to keep things like "__receive" or "__sendqueue"
+                    if (rejectMetric(subNameStr)) {
+                        continue;
+                    }
+                    Object subValue = map.get(subName);
+                    if (subValue instanceof Number) {
+                        localMetric.delete(hdrAndNameLength, localMetric.length());
+                        localMetric.append(".").append(subNameStr);
+
+                        globalMetric.delete(globalNameLength, globalMetric.length());
+                        globalMetric.append(".").append(subNameStr);
+
+                        res.add(new Metric(globalMetric.toString(), ((Number) subValue).longValue()));
+                        res.add(new Metric(localMetric.toString(), ((Number) subValue).longValue()));
+                    }
+                }
+            }
+        }
+        return res;
+    }
+
+	// All Storm internal metrics will start with '__' (after a clean()).  We don't yet find any of those information useful.
+    // So we're ignoring default Storm metrics and only care about our own.
+    private boolean rejectMetric(String name) {
+        return (name.indexOf("__") == 0);
+    }
+
+    public void report(Metric metric) {
+        String s = metric.name;
+        switch(metric.type) {
+            case TIMER: {
+                long number = metric.value.longValue();
+                LOG.debug("reporting: {}={}", s, number);
+                statsd.time(s, number);
+                break;
+            }
+            case GAUGE: {
+                long number = metric.value.longValue();
+                LOG.debug("reporting: {}={}", s, number);
+                statsd.gauge(s, number);
+                break;
+            }
+            default: {
+                long number = metric.value.longValue();
+                LOG.debug("reporting: {}={}", s, number);
+                statsd.count(s, number);
+            }
+        }
+    }
 
 	@Override
 	public void cleanup() {
