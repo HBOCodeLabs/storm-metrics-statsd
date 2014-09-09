@@ -69,11 +69,20 @@ public class StatsdMetricConsumerTest extends TestCase {
 		conf.put(StatsdMetricConsumer.STATSD_PORT, "4444");
 		undertest.parseConfig(conf);
 		assertEquals(4444, undertest.statsdPort);
+
+		conf.put(StatsdMetricConsumer.STATSD_HOST, null);
+		conf.put(StatsdMetricConsumer.STATSD_PREFIX, null);
+		conf.put(StatsdMetricConsumer.STATSD_PORT, null);
+		undertest.parseConfig(conf);
+		assertEquals(4444, undertest.statsdPort);
+		assertEquals("localhost", undertest.statsdHost);
+		assertEquals("my.statsd.prefix.", undertest.statsdPrefix);
 	}
 
 	public void testCleanString() {
 		assertEquals("test", undertest.clean("test"));
 		assertEquals("test_name", undertest.clean("test/name"));
+		assertEquals("test_name", undertest.clean("test:name"));
 	}
 
 	public void testCamcelCase() {
@@ -142,27 +151,27 @@ public class StatsdMetricConsumerTest extends TestCase {
 
 		List<Metric> expected = ImmutableList.<Metric> of(new Metric(
 				"MyBolt7.my.elapsed.int", 22), new Metric(
-				"host_1:6701.MyBolt7.my.elapsed.int", 22), new Metric(
+				"host_1_6701.MyBolt7.my.elapsed.int", 22), new Metric(
 				"MyBolt7.my.gauge.int", 57), new Metric(
-				"host_1:6701.MyBolt7.my.gauge.int", 57), new Metric(
+				"host_1_6701.MyBolt7.my.gauge.int", 57), new Metric(
 				"MyBolt7.my.int.gauge", 58), new Metric(
-				"host_1:6701.MyBolt7.my.int.gauge", 58), new Metric(
+				"host_1_6701.MyBolt7.my.int.gauge", 58), new Metric(
 				"MyBolt7.my.int.elapsed", 59), new Metric(
-				"host_1:6701.MyBolt7.my.int.elapsed", 59), new Metric(
+				"host_1_6701.MyBolt7.my.int.elapsed", 59), new Metric(
 				"MyBolt7.my.long", 57), new Metric(
-				"host_1:6701.MyBolt7.my.long", 57), new Metric(
+				"host_1_6701.MyBolt7.my.long", 57), new Metric(
 				"MyBolt7.my_float", 222), new Metric(
-				"host_1:6701.MyBolt7.my_float", 222), new Metric(
+				"host_1_6701.MyBolt7.my_float", 222), new Metric(
 				"MyBolt7.my_double", 56), new Metric(
-				"host_1:6701.MyBolt7.my_double", 56), new Metric(
+				"host_1_6701.MyBolt7.my_double", 56), new Metric(
 				"MyBolt7.points.elapsed", 3321), new Metric(
-				"host_1:6701.MyBolt7.points.elapsed", 3321), new Metric(
+				"host_1_6701.MyBolt7.points.elapsed", 3321), new Metric(
 				"MyBolt7.points.gauge", 1234), new Metric(
-				"host_1:6701.MyBolt7.points.gauge", 1234), new Metric(
+				"host_1_6701.MyBolt7.points.gauge", 1234), new Metric(
 				"MyBolt7.points.count", 123), new Metric(
-				"host_1:6701.MyBolt7.points.count", 123), new Metric(
+				"host_1_6701.MyBolt7.points.count", 123), new Metric(
 				"MyBolt7.points.time", 2342234), new Metric(
-				"host_1:6701.MyBolt7.points.time", 2342234));
+				"host_1_6701.MyBolt7.points.time", 2342234));
 
 		List<Metric> actual = undertest.dataPointsToMetrics(taskInfo, dataPoints);
 		assertEquals(expected, actual);

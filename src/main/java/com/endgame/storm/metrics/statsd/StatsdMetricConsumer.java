@@ -48,7 +48,7 @@ public class StatsdMetricConsumer implements IMetricsConsumer {
     public static final String STATSD_PREFIX = "metrics.statsd.prefix";
 
     String topologyName;
-    String statsdHost;
+    String statsdHost = "localhost";
     int statsdPort = 8125;
     String statsdPrefix = "storm.metrics.";
 
@@ -68,23 +68,23 @@ public class StatsdMetricConsumer implements IMetricsConsumer {
     }
 
     void parseConfig(@SuppressWarnings("rawtypes") Map conf) {
-        if (conf.containsKey(Config.TOPOLOGY_NAME)) {
+        if (conf.get(Config.TOPOLOGY_NAME) != null) {
             topologyName = (String) conf.get(Config.TOPOLOGY_NAME);
         }
 
-        if (conf.containsKey(STATSD_HOST)) {
+        if (conf.get(STATSD_HOST) != null) {
             statsdHost = (String) conf.get(STATSD_HOST);
         }
 
-        if (conf.containsKey(STATSD_PORT)) {
+        if (conf.get(STATSD_PORT) != null) {
             if (conf.get(STATSD_PORT) instanceof String) {
                 statsdPort = Integer.parseInt((String) conf.get(STATSD_PORT));
-            } else {
+            } else if (conf.get(STATSD_PORT) != null) {
                 statsdPort = ((Number) conf.get(STATSD_PORT)).intValue();
             }
         }
 
-        if (conf.containsKey(STATSD_PREFIX)) {
+        if (conf.get(STATSD_PREFIX) != null) {
             statsdPrefix = (String) conf.get(STATSD_PREFIX);
             if (!statsdPrefix.endsWith(".")) {
                 statsdPrefix += ".";
@@ -106,7 +106,7 @@ public class StatsdMetricConsumer implements IMetricsConsumer {
     }
 
     String clean(String s) {
-        return s.replace('/', '_').toLowerCase();
+        return s.replace('/', '_').replace(':', '_').toLowerCase();
     }
 
     @Override
@@ -137,10 +137,10 @@ public class StatsdMetricConsumer implements IMetricsConsumer {
         public StatsDType getTypeFromName(String name) {
             // making sure they're the last characters
             // elapsed is always a timer
-            if (name.lastIndexOf(".elapsed") == (name.length() - 8)) {
+            if (name.endsWith(".elapsed")) {
                 return StatsDType.TIMER;
             }
-            if (name.lastIndexOf(".gauge") == (name.length() - 6)) {
+            if (name.endsWith(".gauge")) {
                 return StatsDType.GAUGE;
             }
             return StatsDType.COUNTER;
@@ -191,7 +191,7 @@ public class StatsdMetricConsumer implements IMetricsConsumer {
 
         // setup the header for the metrics pertained to this machine
         StringBuilder sb = new StringBuilder()
-                .append(clean(taskInfo.srcWorkerHost).replace(".", "_")).append(":")
+                .append(clean(taskInfo.srcWorkerHost).replace(".", "_")).append("_")
                 .append(taskInfo.srcWorkerPort).append(".");
 
         int machineHrdLength = sb.length();
