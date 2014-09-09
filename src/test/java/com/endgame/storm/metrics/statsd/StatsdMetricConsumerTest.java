@@ -47,7 +47,7 @@ public class StatsdMetricConsumerTest extends TestCase {
 	}
 
 	public void testParseConfig() {
-		assertNull(undertest.statsdHost);
+		assertEquals("localhost", undertest.statsdHost);
 		assertEquals("storm.metrics.", undertest.statsdPrefix);
 		assertEquals(8125, undertest.statsdPort);
 		assertNull(undertest.topologyName);
@@ -97,7 +97,7 @@ public class StatsdMetricConsumerTest extends TestCase {
 	}
 
 	public void testPrepare() {
-		assertNull(undertest.statsdHost);
+		assertEquals("localhost", undertest.statsdHost);
 		assertEquals("storm.metrics.", undertest.statsdPrefix);
 		assertEquals(8125, undertest.statsdPort);
 		assertNull(undertest.topologyName);
