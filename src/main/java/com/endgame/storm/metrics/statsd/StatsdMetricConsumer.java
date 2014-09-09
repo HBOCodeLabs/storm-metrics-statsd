@@ -37,82 +37,82 @@ import com.timgroup.statsd.NonBlockingStatsDClient;
 import com.timgroup.statsd.StatsDClient;
 
 /**
- * @author Jason Trost
+ * @author Jason Trost, jsongHBO
  */
 public class StatsdMetricConsumer implements IMetricsConsumer {
 
-	public static final Logger LOG = LoggerFactory.getLogger(StatsdMetricConsumer.class);
+    public static final Logger LOG = LoggerFactory.getLogger(StatsdMetricConsumer.class);
 
-	public static final String STATSD_HOST = "metrics.statsd.host";
-	public static final String STATSD_PORT = "metrics.statsd.port";
-	public static final String STATSD_PREFIX = "metrics.statsd.prefix";
+    public static final String STATSD_HOST = "metrics.statsd.host";
+    public static final String STATSD_PORT = "metrics.statsd.port";
+    public static final String STATSD_PREFIX = "metrics.statsd.prefix";
 
-	String topologyName;
-	String statsdHost;
-	int statsdPort = 8125;
-	String statsdPrefix = "storm.metrics.";
+    String topologyName;
+    String statsdHost;
+    int statsdPort = 8125;
+    String statsdPrefix = "storm.metrics.";
 
-	transient StatsDClient statsd;
+    transient StatsDClient statsd;
 
-	@SuppressWarnings("rawtypes")
-	@Override
-	public void prepare(Map stormConf, Object registrationArgument,
-			TopologyContext context, IErrorReporter errorReporter) {
-		parseConfig(stormConf);
+    @SuppressWarnings("rawtypes")
+    @Override
+    public void prepare(Map stormConf, Object registrationArgument,
+            TopologyContext context, IErrorReporter errorReporter) {
+        parseConfig(stormConf);
 
-		if (registrationArgument instanceof Map) {
-			parseConfig((Map) registrationArgument);
-		}
+        if (registrationArgument instanceof Map) {
+            parseConfig((Map) registrationArgument);
+        }
 
-		statsd = new NonBlockingStatsDClient(statsdPrefix + clean(topologyName), statsdHost, statsdPort);
-	}
+        statsd = new NonBlockingStatsDClient(statsdPrefix + clean(topologyName), statsdHost, statsdPort);
+    }
 
-	void parseConfig(@SuppressWarnings("rawtypes") Map conf) {
-		if (conf.containsKey(Config.TOPOLOGY_NAME)) {
-			topologyName = (String) conf.get(Config.TOPOLOGY_NAME);
-		}
+    void parseConfig(@SuppressWarnings("rawtypes") Map conf) {
+        if (conf.containsKey(Config.TOPOLOGY_NAME)) {
+            topologyName = (String) conf.get(Config.TOPOLOGY_NAME);
+        }
 
-		if (conf.containsKey(STATSD_HOST)) {
-			statsdHost = (String) conf.get(STATSD_HOST);
-		}
+        if (conf.containsKey(STATSD_HOST)) {
+            statsdHost = (String) conf.get(STATSD_HOST);
+        }
 
-		if (conf.containsKey(STATSD_PORT)) {
-			statsdPort = ((Number) conf.get(STATSD_PORT)).intValue();
-		}
+        if (conf.containsKey(STATSD_PORT)) {
+            statsdPort = ((Number) conf.get(STATSD_PORT)).intValue();
+        }
 
-		if (conf.containsKey(STATSD_PREFIX)) {
-			statsdPrefix = (String) conf.get(STATSD_PREFIX);
-			if (!statsdPrefix.endsWith(".")) {
-				statsdPrefix += ".";
-			}
-		}
-	}
+        if (conf.containsKey(STATSD_PREFIX)) {
+            statsdPrefix = (String) conf.get(STATSD_PREFIX);
+            if (!statsdPrefix.endsWith(".")) {
+                statsdPrefix += ".";
+            }
+        }
+    }
 
-	String clean(String s) {
-		return s.replace('/', '_').toLowerCase();
-	}
+    String clean(String s) {
+        return s.replace('/', '_').toLowerCase();
+    }
 
-	@Override
-	public void handleDataPoints(TaskInfo taskInfo,
-			Collection<DataPoint> dataPoints) {
-		for (Metric metric : dataPointsToMetrics(taskInfo, dataPoints)) {
-			report(metric);
-		}
-	}
+    @Override
+    public void handleDataPoints(TaskInfo taskInfo,
+            Collection<DataPoint> dataPoints) {
+        for (Metric metric : dataPointsToMetrics(taskInfo, dataPoints)) {
+            report(metric);
+        }
+    }
 
-	public static class Metric {
-		public enum StatsDType {
+    public static class Metric {
+        public enum StatsDType {
             TIMER, COUNTER, GAUGE
         }
 
-		String name;
-		Number value;
+        String name;
+        Number value;
         StatsDType type;
 
-		public Metric(String name, Number value) {
-			this.name = name;
-			this.value = value;
-			this.type = getTypeFromName(name);
+        public Metric(String name, Number value) {
+            this.name = name;
+            this.value = value;
+            this.type = getTypeFromName(name);
         }
 
         // Storm doesn't provide any way to convert their Metrics to StatsD's equivalent.  So we have to base on the name of the metric
@@ -127,34 +127,34 @@ public class StatsdMetricConsumer implements IMetricsConsumer {
             return StatsDType.COUNTER;
         }
 
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj)
-				return true;
-			if (obj == null)
-				return false;
-			if (getClass() != obj.getClass())
-				return false;
-			Metric other = (Metric) obj;
-			if (name == null) {
-				if (other.name != null)
-					return false;
-			} else if (!name.equals(other.name))
-				return false;
-			if (value.equals(other.value))
-				return false;
-			if (type != other.type)
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj)
+                return true;
+            if (obj == null)
                 return false;
-			return true;
-		}
+            if (getClass() != obj.getClass())
+                return false;
+            Metric other = (Metric) obj;
+            if (name == null) {
+                if (other.name != null)
+                    return false;
+            } else if (!name.equals(other.name))
+                return false;
+            if (value.equals(other.value))
+                return false;
+            if (type != other.type)
+                return false;
+            return true;
+        }
 
-		@Override
-		public String toString() {
-			return "Metric [name=" + name + ", value=" + value + "]";
-		}
-	}
+        @Override
+        public String toString() {
+            return "Metric [name=" + name + ", value=" + value + "]";
+        }
+    }
 
-	List<Metric> dataPointsToMetrics(TaskInfo taskInfo,
+    List<Metric> dataPointsToMetrics(TaskInfo taskInfo,
             Collection<DataPoint> dataPoints) {
         List<Metric> res = new LinkedList<>();
 
@@ -186,7 +186,7 @@ public class StatsdMetricConsumer implements IMetricsConsumer {
             localMetric.append(name);
 
             if (p.value instanceof Number) {
-            	res.add(new Metric(localMetric.substring(globalMetricHdrLength), ((Number) p.value).longValue()));
+                res.add(new Metric(localMetric.substring(globalMetricHdrLength), ((Number) p.value).longValue()));
                 res.add(new Metric(localMetric.toString(), ((Number) p.value).longValue()));
             } else if (p.value instanceof Map) {
                 int hdrAndNameLength = localMetric.length();
@@ -212,7 +212,7 @@ public class StatsdMetricConsumer implements IMetricsConsumer {
         return res;
     }
 
-	// All Storm internal metrics will start with '__' (after a clean()).  We don't yet find any of those information useful.
+    // All Storm internal metrics will start with '__' (after a clean()).  We don't yet find any of those information useful.
     // So we're ignoring default Storm metrics and only care about our own.
     private boolean rejectMetric(String name) {
         return (name.indexOf("__") == 0);
@@ -241,8 +241,8 @@ public class StatsdMetricConsumer implements IMetricsConsumer {
         }
     }
 
-	@Override
-	public void cleanup() {
-		statsd.stop();
-	}
+    @Override
+    public void cleanup() {
+        statsd.stop();
+    }
 }
