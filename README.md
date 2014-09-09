@@ -1,10 +1,12 @@
 # Storm Metrics Statsd
 
+This is a forked project from [Endgameinc storm-metrics-statsd](https://github.com/endgameinc/storm-metrics-statsd)
+
 storm-metrics-statsd is a module for [Storm](http://storm-project.net/) that enables metrics collection and reporting to [statsd](https://github.com/etsy/statsd/).
 
 ## Building/Installation
 
-    git clone https://github.com/endgameinc/storm-metrics-statsd.git
+    git clone https://github.com/HBOCodeLabs/storm-metrics-statsd.git
     cd storm-metrics-statsd
     mvn compile package install
 
@@ -20,9 +22,9 @@ This module can be used in two ways:
 Add this as a dependency to your `pom.xml`
 
     <dependency>
-      <groupId>com.endgame</groupId>
+      <groupId>com.hbo.hurley</groupId>
       <artifactId>storm-metrics-statsd</artifactId>
-      <version>1.0.0-SNAPSHOT</version>
+      <version>1.0.1-SNAPSHOT</version>
     </dependency>
 
 Configure the `StatsdMetricConsumer` when building your topology.  The example below is
@@ -36,7 +38,7 @@ based on the [storm-starter](https://github.com/nathanmarz/storm-starter) [Excla
     builder.setSpout("word", new TestWordSpout(), 10);
     builder.setBolt("exclaim1", new ExclamationBolt(), 3).shuffleGrouping("word");
     builder.setBolt("exclaim2", new ExclamationBolt(), 2).shuffleGrouping("exclaim1");
-    
+
     #
     #  Configure the StatsdMetricConsumer
     #
@@ -44,10 +46,10 @@ based on the [storm-starter](https://github.com/nathanmarz/storm-starter) [Excla
     statsdConfig.put(StatsdMetricConsumer.STATSD_HOST, "statsd.server.mydomain.com");
     statsdConfig.put(StatsdMetricConsumer.STATSD_PORT, 8125);
     statsdConfig.put(StatsdMetricConsumer.STATSD_PREFIX, "storm.metrics.");
-    
+
     Config conf = new Config();
     conf.registerMetricsConsumer(StatsdMetricConsumer.class, statsdConfig, 2);
-     
+
     if (args != null && args.length > 0) {
       conf.setNumWorkers(3);
       StormSubmitter.submitTopology(args[0], conf, builder.createTopology());
@@ -64,7 +66,7 @@ based on the [storm-starter](https://github.com/nathanmarz/storm-starter) [Excla
 
 System wide deployment requires three steps:
 
-#### 1. Add this section to your `$STORM_HOME/conf/storm.yaml`.  
+#### 1. Add this section to your `$STORM_HOME/conf/storm.yaml`.
 
     topology.metrics.consumer.register:
       - class: "com.endgame.storm.metrics.statsd.StatsdMetricConsumer"
@@ -88,19 +90,19 @@ System wide deployment requires three steps:
 You can override the topology name used when reporting to statsd by calling:
 
     statsdConfig.put(Config.TOPOLOGY_NAME, "myTopologyName");
-    // OR 
+    // OR
     statsdConfig.put("topology.name", "myTopologyName");
 
-This will be useful if you use versioned topology names (.e.g. appending a timestamp or a version string), but only care to track them as one in statsd.    
+This will be useful if you use versioned topology names (.e.g. appending a timestamp or a version string), but only care to track them as one in statsd.
 
 ## License
 
 storm-metrics-statsd
-        
+
 Copyright 2014 [Endgame, Inc.](http://www.endgame.com/)
 
 ![Endgame, Inc.](http://www.endgame.com/images/logo.svg)
-      
+
 
         Licensed under the Apache License, Version 2.0 (the "License"); you may
         not use this file except in compliance with the License. You may obtain
@@ -118,4 +120,5 @@ Copyright 2014 [Endgame, Inc.](http://www.endgame.com/)
 ## Author
 
 [Jason Trost](https://github.com/jt6211/) ([@jason_trost](https://twitter.com/jason_trost))
+[Jack Song](https://github.com/jsongHBO/)
 
