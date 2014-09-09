@@ -106,7 +106,7 @@ public class StatsdMetricConsumer implements IMetricsConsumer {
     }
 
     String clean(String s) {
-        return s.replace('/', '_').toLowerCase();
+        return s.replace('/', '_').replace(':', '_').toLowerCase();
     }
 
     @Override
@@ -191,7 +191,7 @@ public class StatsdMetricConsumer implements IMetricsConsumer {
 
         // setup the header for the metrics pertained to this machine
         StringBuilder sb = new StringBuilder()
-                .append(clean(taskInfo.srcWorkerHost).replace(".", "_")).append(":")
+                .append(clean(taskInfo.srcWorkerHost).replace(".", "_")).append("_")
                 .append(taskInfo.srcWorkerPort).append(".");
 
         int machineHrdLength = sb.length();

@@ -82,6 +82,7 @@ public class StatsdMetricConsumerTest extends TestCase {
 	public void testCleanString() {
 		assertEquals("test", undertest.clean("test"));
 		assertEquals("test_name", undertest.clean("test/name"));
+		assertEquals("test_name", undertest.clean("test:name"));
 	}
 
 	public void testCamcelCase() {
