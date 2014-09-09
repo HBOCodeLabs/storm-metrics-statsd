@@ -4,7 +4,7 @@
   <groupId>com.hbo.hurley</groupId>
   <artifactId>storm-metrics-statsd</artifactId>
   <packaging>jar</packaging>
-  <version>1.0.2-SNAPSHOTS</version>
+  <version>1.0.2-SNAPSHOT</version>
   <name>storm-metrics-statsd</name>
   <url>http://maven.apache.org</url>
   <repositories>
