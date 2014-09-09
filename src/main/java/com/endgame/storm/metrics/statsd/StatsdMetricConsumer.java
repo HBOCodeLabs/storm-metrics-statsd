@@ -119,13 +119,15 @@ public class StatsdMetricConsumer implements IMetricsConsumer {
             this.type = getTypeFromName(name);
         }
 
-        // Storm doesn't provide any way to convert their Metrics to StatsD's equivalent.  So we have to base on the name of the metric
+        // Storm doesn't provide any way to convert their Metrics to StatsD's equivalent.
+        // So we have to base on the name of the metric
         public StatsDType getTypeFromName(String name) {
+            // making sure they're the last characters
             // elapsed is always a timer
-            if (name.indexOf(".elapsed") > -1) {
+            if (name.lastIndexOf(".elapsed") == (name.length() - 8)) {
                 return StatsDType.TIMER;
             }
-            if (name.indexOf(".gauge") > -1) {
+            if (name.lastIndexOf(".gauge") == (name.length() - 6)) {
                 return StatsDType.GAUGE;
             }
             return StatsDType.COUNTER;

@@ -106,7 +106,10 @@ public class StatsdMetricConsumerTest extends TestCase {
 				123456789000L, 60);
 		List<DataPoint> dataPoints = new LinkedList<>();
 
-		dataPoints.add(new DataPoint("my.int", 57));
+		dataPoints.add(new DataPoint("my.elapsed.int", 22));
+		dataPoints.add(new DataPoint("my.gauge.int", 57));
+		dataPoints.add(new DataPoint("my.int.gauge", 58));
+		dataPoints.add(new DataPoint("my.int.elapsed", 59));
 		dataPoints.add(new DataPoint("my.long", 57L));
 		dataPoints.add(new DataPoint("my/float", 222f));
 		dataPoints.add(new DataPoint("my_double", 56.0d));
@@ -126,8 +129,14 @@ public class StatsdMetricConsumerTest extends TestCase {
 		// they should not show up here
 
 		List<Metric> expected = ImmutableList.<Metric> of(new Metric(
-				"mybolt7.my.int", 57), new Metric(
-				"host1.6701.mybolt7.my.int", 57), new Metric(
+				"mybolt7.my.elapsed.int", 22), new Metric(
+				"host1.6701.mybolt7.my.elapsed.int", 22), new Metric(
+				"mybolt7.my.gauge.int", 57), new Metric(
+				"host1.6701.mybolt7.my.gauge.int", 57), new Metric(
+				"mybolt7.my.int.gauge", 58), new Metric(
+				"host1.6701.mybolt7.my.int.gauge", 58), new Metric(
+				"mybolt7.my.int.elapsed", 59), new Metric(
+				"host1.6701.mybolt7.my.int.elapsed", 59), new Metric(
 				"mybolt7.my.long", 57), new Metric(
 				"host1.6701.mybolt7.my.long", 57), new Metric(
 				"mybolt7.my_float", 222), new Metric(
@@ -143,8 +152,16 @@ public class StatsdMetricConsumerTest extends TestCase {
 				"mybolt7.points.time", 2342234), new Metric(
 				"host1.6701.mybolt7.points.time", 2342234));
 
-		assertEquals(expected,
-				undertest.dataPointsToMetrics(taskInfo, dataPoints));
-
+		List<Metric> actual = undertest.dataPointsToMetrics(taskInfo, dataPoints);
+		assertEquals(expected, actual);
+		for(int i = 0; i < 4; i++) {
+			assertEquals(actual.get(i).type, Metric.StatsDType.COUNTER);
+		}
+		for(int i = 4; i < 6; i++) {
+			assertEquals(actual.get(i).type, Metric.StatsDType.GAUGE);
+		}
+		for(int i = 6; i < 8; i++) {
+			assertEquals(actual.get(i).type, Metric.StatsDType.TIMER);
+		}
 	}
 }
