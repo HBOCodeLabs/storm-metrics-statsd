@@ -92,6 +92,19 @@ public class StatsdMetricConsumer implements IMetricsConsumer {
         }
     }
 
+    String toCamelCase(String s) {
+        StringBuilder sb = new StringBuilder();
+        for(String part: s.split("_") ) {
+            if (part.length() > 0) {
+                sb.append(Character.toUpperCase(part.charAt(0)));
+            }
+            if (part.length() > 1) {
+                sb.append(part.substring(1).toLowerCase());
+            }
+        }
+        return sb.toString();
+    }
+
     String clean(String s) {
         return s.replace('/', '_').toLowerCase();
     }
@@ -135,22 +148,29 @@ public class StatsdMetricConsumer implements IMetricsConsumer {
 
         @Override
         public boolean equals(Object obj) {
-            if (this == obj)
+            if (this == obj) {
                 return true;
-            if (obj == null)
+            }
+            if (obj == null) {
                 return false;
-            if (getClass() != obj.getClass())
+            }
+            if (getClass() != obj.getClass()) {
                 return false;
+            }
             Metric other = (Metric) obj;
             if (name == null) {
-                if (other.name != null)
+                if (other.name != null) {
                     return false;
-            } else if (!name.equals(other.name))
+                }
+            } else if (!name.equals(other.name)) {
                 return false;
-            if (value.equals(other.value))
+            }
+            if (value.longValue() != other.value.longValue()) {
                 return false;
-            if (type != other.type)
+            }
+            if (type != other.type) {
                 return false;
+            }
             return true;
         }
 
@@ -170,15 +190,15 @@ public class StatsdMetricConsumer implements IMetricsConsumer {
         }
 
         // setup the header for the metrics pertained to this machine
-        StringBuilder localMetric = new StringBuilder()
-                .append(clean(taskInfo.srcWorkerHost)).append(".")
+        StringBuilder sb = new StringBuilder()
+                .append(clean(taskInfo.srcWorkerHost).replace(".", "_")).append(":")
                 .append(taskInfo.srcWorkerPort).append(".");
 
-        int globalMetricHdrLength = localMetric.length();
+        int machineHrdLength = sb.length();
 
-        localMetric.append(clean(taskInfo.srcComponentId)).append(".");
+        sb.append(toCamelCase(clean(taskInfo.srcComponentId))).append(".");
 
-        int hdrLength = localMetric.length();
+        int hdrLength = sb.length();
 
         for (DataPoint p : dataPoints) {
 
@@ -188,14 +208,14 @@ public class StatsdMetricConsumer implements IMetricsConsumer {
                 continue;
             }
 
-            localMetric.delete(hdrLength, localMetric.length());
-            localMetric.append(name);
+            sb.delete(hdrLength, sb.length());
+            sb.append(name);
 
             if (p.value instanceof Number) {
-                res.add(new Metric(localMetric.substring(globalMetricHdrLength), ((Number) p.value).longValue()));
-                res.add(new Metric(localMetric.toString(), ((Number) p.value).longValue()));
+                res.add(new Metric(sb.substring(machineHrdLength), ((Number) p.value).longValue()));
+                res.add(new Metric(sb.toString(), ((Number) p.value).longValue()));
             } else if (p.value instanceof Map) {
-                int hdrAndNameLength = localMetric.length();
+                int hdrAndNameLength = sb.length();
                 @SuppressWarnings("rawtypes")
                 Map map = (Map) p.value;
                 for (Object subName : map.keySet()) {
@@ -206,11 +226,11 @@ public class StatsdMetricConsumer implements IMetricsConsumer {
                     }
                     Object subValue = map.get(subName);
                     if (subValue instanceof Number) {
-                        localMetric.delete(hdrAndNameLength, localMetric.length());
-                        localMetric.append(".").append(subNameStr);
+                        sb.delete(hdrAndNameLength, sb.length());
+                        sb.append(".").append(subNameStr);
 
-                        res.add(new Metric(localMetric.substring(globalMetricHdrLength), ((Number) subValue).longValue()));
-                        res.add(new Metric(localMetric.toString(), ((Number) subValue).longValue()));
+                        res.add(new Metric(sb.substring(machineHrdLength), ((Number) subValue).longValue()));
+                        res.add(new Metric(sb.toString(), ((Number) subValue).longValue()));
                     }
                 }
             }
